@@ -1,7 +1,8 @@
-const keepLiveURL = ("https://" + process.env.PROJECT_DOMAIN + ".glitch.me")
 const express = require("express");
 const app = express();
 const exec = require("child_process").exec;
+const iconv = require("iconv-lite");
+const chardet = require('chardet');
 const os = require("os");
 const fs = require("fs");
 const path = require("path");
@@ -19,6 +20,20 @@ let proxyConfig = [
 
 // json 解析
 app.use(express.json());
+
+// 请求日志中间件
+app.use((req, res, next) => {
+    console.debug(`Request:  ${req.method} ${req.url}`);
+    next();
+});
+
+// 响应日志中间件
+app.use((req, res, next) => {
+    res.on("finish", () => {
+        console.debug(`Response: ${req.method} ${req.url} ${res.statusCode} ${res.statusMessage} `);
+    });
+    next();
+});
 
 // config
 app.get("/config", (req, res) => {
@@ -102,11 +117,19 @@ app.post("/eCmd", (req, res) => {
         res.status(500).json({msg: "命令不能为空!", code: 500});
         return;
     }
-    exec(cmdStr, function (err, stdout) {
+    exec(cmdStr, {encoding: 'buffer'}, function (err, stdout, stderr) {
+        let msg = ""
+        if (stdout) {
+            msg += iconv.decode(stdout, chardet.detect(stdout));
+        }
+        if (stderr) {
+            msg += '\n'
+            msg += iconv.decode(stderr, chardet.detect(stderr));
+        }
         if (err) {
-            res.status(500).json({msg: "命令行执行错误：\n" + err, code: 500});
+            res.status(500).json({msg: "命令执行错误：\n\n" + msg, code: 500});
         } else {
-            res.status(200).json({msg: stdout, code: 200});
+            res.status(200).json({msg: "命令执行成功：\n\n" + msg, code: 200});
         }
     });
 });
@@ -175,13 +198,17 @@ function pm2Resurrect() {
 
 function keepalive() {
     // 1.请求主页，保持唤醒
-    exec("curl -m5 " + keepLiveURL, function (err, stdout) {
-        if (err) {
-            console.log("保活-请求主页-命令行执行错误: " + err);
-        } else {
-            console.log("保活-请求主页-命令行执行成功，响应报文: " + stdout);
-        }
-    });
+    const baseUrl = process.env.PROJECT_DOMAIN;
+    if (baseUrl) {
+        const keepLiveURL = ("https://" + baseUrl + ".glitch.me")
+        exec("curl -m5 " + keepLiveURL, function (err, stdout) {
+            if (err) {
+                console.log("保活-请求主页-命令行执行错误: " + err);
+            } else {
+                console.log("保活-请求主页-命令行执行成功，响应报文: " + stdout);
+            }
+        });
+    }
     //2.pm2 恢复进程
     pm2Resurrect();
 }
