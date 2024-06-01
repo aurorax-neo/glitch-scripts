@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/test",
+    "target": "https://www.baidu.com"
+  },
+  {
+    "path": "/b",
+    "target": "https://www.baidu.com"
+  },
+  {
+    "path": "/dscfsc",
+    "target": "https://www.baidu.com"
+  }
+]

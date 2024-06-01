@@ -93,10 +93,10 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'pwd': pwd
             },
             body: JSON.stringify({
-                cmd: cmd,
-                pwd: pwd
+                cmd: cmd
             }),
         }).then(response => response.json()).then(data => {
             resultBox.value = data.msg;

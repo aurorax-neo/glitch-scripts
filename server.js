@@ -3,28 +3,66 @@ const express = require("express");
 const app = express();
 const exec = require("child_process").exec;
 const os = require("os");
+const fs = require("fs");
+const path = require("path");
 const {createProxyMiddleware} = require("http-proxy-middleware");
-
 // 配置 start
 const serverPort = 3000;
 const eCmdPwd = "kons-ensitiveheng-lexicon";
-const proxyURL = "https://www.baidu.com";
-
+// 读取config.json
+const configPath = path.resolve(__dirname, "config.json");
+// 配置列表
+let proxyConfig = [
+    {path: '/test', target: 'https://www.baidu.com'},
+];
 // 配置 end
 
-const eCmdRequest = {
-    pwd: String,
-    cmd: String
-}
-const eCmdResponse = {
-    code: Number,
-    msg: String
-}
-
+// json 解析
 app.use(express.json());
 
+// config
+app.get("/config", (req, res) => {
+    res.status(200).sendFile(__dirname + "/config.html");
+});
+
+// readConfig
+function readConfig() {
+    if (!fs.existsSync(configPath)) {
+        // 创建文件
+        fs.writeFileSync(configPath, JSON.stringify(proxyConfig));
+    }
+    proxyConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    return proxyConfig;
+}
+
+// configs
+app.get("/configs", (req, res) => {
+    let pwd = req.header("pwd")
+    if (pwd !== eCmdPwd) {
+        res.status(401).json({msg: "密码错误", code: 401});
+        return;
+    }
+    res.status(200).json({msg: '', code: 200, data: readConfig()});
+});
+
+// editConfig
+app.post("/configs", (req, res) => {
+    let pwd = req.header("pwd")
+    if (pwd !== eCmdPwd) {
+        res.status(401).json({msg: "密码错误", code: 401});
+        return;
+    }
+    let config = req.body;
+    if (config === undefined || config === "") {
+        res.status(500).json({msg: "配置不能为空!", code: 500});
+        return;
+    }
+    fs.writeFileSync(configPath, JSON.stringify(config));
+    res.status(200).json({msg: "保存成功", code: 200});
+});
+
 app.get("/", (req, res) => {
-    res.send(`${Date.now()} - hello world!`);
+    res.status(200).send(`${Date.now()} - hello world!`);
 });
 
 //获取系统版本、内存信息
@@ -32,9 +70,9 @@ app.get("/info", (req, res) => {
     let cmdStr = "cat /etc/*release | grep -E ^NAME";
     exec(cmdStr, function (err, stdout) {
         if (err) {
-            res.send("命令行执行错误：" + err);
+            res.status(500).send("命令行执行错误：" + err);
         } else {
-            res.send(
+            res.status(200).send(
                 "命令行执行结果：\n" +
                 "Linux System:" +
                 stdout +
@@ -48,41 +86,78 @@ app.get("/info", (req, res) => {
 
 // cmd 返回 cmd.html
 app.get("/cmd", (req, res) => {
-    res.sendFile(__dirname + "/cmd.html");
+    res.status(200).sendFile(__dirname + "/cmd.html");
 });
 
 // eCmd
 app.post("/eCmd", (req, res) => {
-    if (req.body.pwd !== eCmdPwd) {
-        res.json({msg: "密码错误", code: 500});
+    let pwd = req.header("pwd")
+    if (pwd !== eCmdPwd) {
+        res.status(401).json({msg: "密码错误", code: 401});
         return;
     }
     let cmdStr = req.body.cmd;
     if (cmdStr === undefined || cmdStr === "") {
-        res.json({msg: "命令不能为空!", code: 500});
+        res.status(500).json({msg: "命令不能为空!", code: 500});
         return;
     }
     exec(cmdStr, function (err, stdout) {
         if (err) {
-            res.json({msg: "命令行执行错误：" + err, code: 500});
+            res.status(500).json({msg: "命令行执行错误：\n" + err, code: 500});
         } else {
-            res.json({msg: "命令行执行结果：" + stdout, code: 200});
+            res.status(200).json({msg: stdout, code: 200});
         }
     });
 });
 
-// 反代
-app.use("/index", createProxyMiddleware({
-        target: proxyURL, // 需要跨域处理的请求地址
-        changeOrigin: true, // 默认false，是否需要改变原始主机头为目标URL
-        ws: true, // 是否代理websockets
-        pathRewrite: {
-            "^/index": "/" // 重写路径
+// 动态代理中间件
+const dynamicProxyMiddleware = (req, res, next) => {
+    readConfig();
+    let target = '';
+
+    // 根据配置列表动态设置目标URL
+    for (const config of proxyConfig) {
+        if (req.path.startsWith(config.path)) {
+            target = config.target;
+            break;
+        }
+    }
+
+    // 如果找不到匹配的目标URL，直接调用下一个中间件
+    if (!target) {
+        return next();
+    }
+
+    // 动态创建代理中间件
+    const proxy = createProxyMiddleware({
+        target: target,
+        changeOrigin: true,
+        ws: true,
+        pathRewrite: (path, req) => {
+            // 根据配置重写路径
+            for (const config of proxyConfig) {
+                if (req.path.startsWith(config.path)) {
+                    return path.replace(config.path, '/');
+                }
+            }
+            return path;
         },
         secure: false,
         selfHandleResponse: false
-    })
-);
+    });
+
+    // 调用代理中间件处理请求
+    proxy(req, res, next);
+};
+
+// 使用动态代理中间件
+app.use(dynamicProxyMiddleware);
+
+// 拦截404
+app.use(function (req, res, next) {
+    res.status(404).sendFile(__dirname + "/404.html");
+});
+
 
 /* keepalive  begin */
 
