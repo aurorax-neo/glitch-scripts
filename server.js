@@ -50,6 +50,9 @@ function readConfig() {
     return proxyConfig;
 }
 
+// 初始化配置
+readConfig();
+
 // configs
 app.get("/configs", (req, res) => {
     let pwd = req.header("pwd")
@@ -147,6 +150,18 @@ const dynamicProxyMiddleware = (req, res, next) => {
         }
     }
 
+    // 如果找不到匹配的目标URL，尝试使用 Referer 检查
+    if (!target) {
+        // Referer 检查
+        let refererURL = new URL(req.headers.referer);
+        for (const config of proxyConfig) {
+            if (refererURL.pathname.startsWith(config.path)) {
+                target = config.target + req.path;
+                break;
+            }
+        }
+    }
+
     // 如果找不到匹配的目标URL，直接调用下一个中间件
     if (!target) {
         return next();
@@ -158,6 +173,7 @@ const dynamicProxyMiddleware = (req, res, next) => {
         changeOrigin: true,
         ws: true,
         pathRewrite: (path, req) => {
+            console.log("path: " + path)
             // 根据配置重写路径
             for (const config of proxyConfig) {
                 if (req.path.startsWith(config.path)) {
