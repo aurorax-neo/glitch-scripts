@@ -58,6 +58,7 @@ app.post("/configs", (req, res) => {
         return;
     }
     fs.writeFileSync(configPath, JSON.stringify(config));
+    readConfig();
     res.status(200).json({msg: "保存成功", code: 200});
 });
 
@@ -112,7 +113,7 @@ app.post("/eCmd", (req, res) => {
 
 // 动态代理中间件
 const dynamicProxyMiddleware = (req, res, next) => {
-    readConfig();
+    // 目标URL
     let target = '';
 
     // 根据配置列表动态设置目标URL
@@ -154,7 +155,7 @@ const dynamicProxyMiddleware = (req, res, next) => {
 app.use(dynamicProxyMiddleware);
 
 // 拦截404
-app.use(function (req, res, next) {
+app.use(function (req, res) {
     res.status(404).sendFile(__dirname + "/404.html");
 });
 
@@ -174,7 +175,7 @@ function pm2Resurrect() {
 
 function keepalive() {
     // 1.请求主页，保持唤醒
-    exec("curl -m5 " + keepLiveURL, function (err, stdout, stderr) {
+    exec("curl -m5 " + keepLiveURL, function (err, stdout) {
         if (err) {
             console.log("保活-请求主页-命令行执行错误: " + err);
         } else {

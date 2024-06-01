@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
-    <title>Execution Command</title>
+    <title>执行命令</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -65,23 +65,41 @@
 <body>
 <div class="container">
     <div class="input-group">
-        <label for="command">Command</label>
+        <label for="command">命令</label>
         <input id="command" placeholder="Enter command" type="text">
     </div>
     <div class="input-group">
-        <label for="password">Password</label>
+        <label for="password">密码</label>
         <input id="password" placeholder="Enter password" type="password">
     </div>
     <div class="input-group">
-        <button onclick="executeCommand()">Execute Command</button>
+        <button id="submit">执行</button>
+        <button id="clearPassword">清除密码</button>
     </div>
     <div class="input-group">
-        <label for="result">Result</label>
+        <label for="result">结果</label>
         <textarea id="result" readonly></textarea>
     </div>
 </div>
 
 <script>
+    document.getElementById('submit').addEventListener('click', function () {
+        const pwd = document.getElementById('password').value;
+        localStorage.setItem('pwd', pwd);
+        executeCommand();
+    });
+
+    document.getElementById('clearPassword').addEventListener('click', function () {
+        localStorage.removeItem('pwd');
+        document.getElementById('password').value = '';
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const pwd = localStorage.getItem('pwd');
+        if (pwd) {
+            document.getElementById('password').value = pwd;
+        }
+    });
     function executeCommand() {
         const cmd = document.getElementById('command').value;
         const pwd = document.getElementById('password').value;
