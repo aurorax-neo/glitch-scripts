@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>Command Execution Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            width: 60%;
+            margin: 20px;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            height: 150px;
+            resize: vertical;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="input-group">
+        <label for="command">Command</label>
+        <input id="command" placeholder="Enter command" type="text">
+    </div>
+    <div class="input-group">
+        <label for="password">Password</label>
+        <input id="password" placeholder="Enter password" type="password">
+    </div>
+    <div class="input-group">
+        <button onclick="executeCommand()">Execute Command</button>
+    </div>
+    <div class="input-group">
+        <label for="result">Result</label>
+        <textarea id="result" readonly></textarea>
+    </div>
+</div>
+
+<script>
+    function executeCommand() {
+        const cmd = document.getElementById('command').value;
+        const pwd = document.getElementById('password').value;
+        const resultBox = document.getElementById('result');
+        // 获取地址
+        const url = new URL(window.location.origin) + 'eCmd';
+        // 发送请求
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                cmd: cmd,
+                pwd: pwd
+            }),
+        }).then(response => response.json()).then(data => {
+            resultBox.value = data.msg;
+        }).catch((error) => {
+            resultBox.value = error.msg;
+        });
+    }
+</script>
+</body>
+</html>
