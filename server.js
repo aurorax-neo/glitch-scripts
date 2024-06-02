@@ -14,7 +14,7 @@ const eCmdPwd = "kons-ensitiveheng-lexicon";
 const configPath = path.resolve(__dirname, "config.json");
 // 配置列表
 let proxyConfig = [
-    {path: '/test', target: 'https://www.baidu.com'},
+    {path: '/', target: 'https://www.baidu.com'},
 ];
 // 配置 end
 
@@ -80,7 +80,7 @@ app.post("/configs", (req, res) => {
     res.status(200).json({msg: "保存成功", code: 200});
 });
 
-app.get("/", (req, res) => {
+app.get("/hello", (req, res) => {
     res.status(200).send(`${Date.now()} - hello world!`);
 });
 
@@ -150,18 +150,6 @@ const dynamicProxyMiddleware = (req, res, next) => {
         }
     }
 
-    // 如果找不到匹配的目标URL，尝试使用 Referer 检查
-    if (!target) {
-        // Referer 检查
-        let refererURL = new URL(req.headers.referer);
-        for (const config of proxyConfig) {
-            if (refererURL.pathname.startsWith(config.path)) {
-                target = config.target + req.path;
-                break;
-            }
-        }
-    }
-
     // 如果找不到匹配的目标URL，直接调用下一个中间件
     if (!target) {
         return next();
@@ -216,7 +204,7 @@ function keepalive() {
     // 1.请求主页，保持唤醒
     const baseUrl = process.env.PROJECT_DOMAIN;
     if (baseUrl) {
-        const keepLiveURL = ("https://" + baseUrl + ".glitch.me")
+        const keepLiveURL = ("https://" + baseUrl + ".glitch.me" + "/hello")
         exec("curl -m5 " + keepLiveURL, function (err, stdout) {
             if (err) {
                 console.log("保活-请求主页-命令行执行错误: " + err);
