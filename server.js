@@ -9,7 +9,7 @@ const path = require("path");
 const {createProxyMiddleware} = require("http-proxy-middleware");
 // 配置 start
 const serverPort = 3000;
-const eCmdPwd = "kons-ensitiveheng-lexicon";
+let eCmdPwd = "123456";
 // 读取config.json
 const configPath = path.resolve(__dirname, "config.json");
 // 配置列表
@@ -44,14 +44,35 @@ app.get("/config", (req, res) => {
 function readConfig() {
     if (!fs.existsSync(configPath)) {
         // 创建文件
-        fs.writeFileSync(configPath, JSON.stringify(proxyConfig));
+        fs.writeFileSync(configPath, JSON.stringify({'eCmdPwd': eCmdPwd, 'proxy': proxyConfig}));
     }
-    proxyConfig = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-    return proxyConfig;
+    const cgs = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    eCmdPwd = cgs['eCmdPwd'];
+    proxyConfig = cgs['proxy'];
+    return cgs;
 }
 
 // 初始化配置
 readConfig();
+
+// 修改密码
+app.post("/eCmdPwd", (req, res) => {
+    let pwd = req.header("pwd")
+    if (pwd !== eCmdPwd) {
+        res.status(401).json({msg: "密码错误", code: 401});
+        return;
+    }
+    let newPwd = req.body['eCmdPwd'];
+    if (newPwd === undefined || newPwd === "") {
+        res.status(500).json({msg: "密码不能为空!", code: 500});
+        return;
+    }
+    let cgs = readConfig();
+    eCmdPwd = newPwd;
+    cgs['eCmdPwd'] = eCmdPwd;
+    fs.writeFileSync(configPath, JSON.stringify(cgs));
+    res.status(200).json({msg: "修改成功", code: 200});
+});
 
 // configs
 app.get("/configs", (req, res) => {
@@ -60,7 +81,8 @@ app.get("/configs", (req, res) => {
         res.status(401).json({msg: "密码错误", code: 401});
         return;
     }
-    res.status(200).json({msg: '', code: 200, data: readConfig()});
+    const cgs = readConfig()
+    res.status(200).json({msg: '', code: 200, data: cgs['proxy']});
 });
 
 // editConfig
@@ -70,13 +92,14 @@ app.post("/configs", (req, res) => {
         res.status(401).json({msg: "密码错误", code: 401});
         return;
     }
-    let config = req.body;
-    if (config === undefined || config === "") {
+    let proxy = req.body;
+    if (proxy === undefined || proxy === "") {
         res.status(500).json({msg: "配置不能为空!", code: 500});
         return;
     }
-    fs.writeFileSync(configPath, JSON.stringify(config));
-    readConfig();
+    let cgs = readConfig()
+    cgs['proxy'] = proxy;
+    fs.writeFileSync(configPath, JSON.stringify(cgs));
     res.status(200).json({msg: "保存成功", code: 200});
 });
 

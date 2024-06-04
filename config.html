@@ -68,7 +68,7 @@
             margin-right: 5px;
         }
 
-        #submitPassword, #clearPassword, #refreshConfigs {
+        #submitPassword, #clearPassword, #refreshConfigs, #changePassword {
             padding: 8px 12px;
             background-color: #4CAF50;
             color: white;
@@ -78,7 +78,7 @@
             margin-left: 10px;
         }
 
-        #submitPassword:hover, #clearPassword:hover, #refreshConfigs:hover {
+        #submitPassword:hover, #clearPassword:hover, #refreshConfigs:hover, #changePassword:hover {
             background-color: #45a049;
         }
     </style>
@@ -91,6 +91,14 @@
 <button id="submitPassword">提交</button>
 <button id="clearPassword">清除密码</button>
 <button id="refreshConfigs">刷新配置</button>
+<br><br>
+
+<h2>修改密码</h2>
+<label for="currentPassword">当前密码:</label>
+<input id="currentPassword" type="password">
+<label for="newPassword">新密码:</label>
+<input id="newPassword" type="password">
+<button id="changePassword">修改密码</button>
 <br><br>
 
 <h2>配置列表</h2>
@@ -129,6 +137,10 @@
 
     document.getElementById('refreshConfigs').addEventListener('click', function () {
         fetchConfigs();
+    });
+
+    document.getElementById('changePassword').addEventListener('click', function () {
+        changePassword();
     });
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -188,6 +200,38 @@
         } catch (error) {
             console.error('网络请求失败:', error);
         }
+    }
+
+    async function changePassword() {
+        const currentPassword = document.getElementById('currentPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+
+        if (!currentPassword || !newPassword) {
+            alert('请填写当前密码和新密码');
+            return;
+        }
+
+        const url = new URL(window.location.origin) + 'eCmdPwd';
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'pwd': currentPassword
+            },
+            body: JSON.stringify({eCmdPwd: newPassword})
+        }).then(response => response.json()).then(data => {
+            if (data.code === 200) {
+                alert('密码修改成功');
+                localStorage.setItem('pwd', newPassword);
+                document.getElementById('password').value = newPassword;
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+            } else {
+                alert(data.msg);
+            }
+        }).catch((error) => {
+            console.error('修改密码失败:', error);
+        });
     }
 
     function loadConfigs() {
