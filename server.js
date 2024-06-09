@@ -36,21 +36,21 @@ app.get("/info", (req, res) => {
     });
 });
 
+
 // 使用代理中间件
-app.use('/', createProxyMiddleware({
-    target: proxyTarget,
-    changeOrigin: true,
-    ws: true,
-    pathRewrite: {
-        "^/": "/"
-    },
-    secure: false,
-    selfHandleResponse: false,
-}));
+app.all("/", createProxyMiddleware({
+        target: proxyTarget,
+        changeOrigin: true,
+        ws: true,
+        pathRewrite: {"^/": "/"},
+        secure: false,
+        selfHandleResponse: false
+    })
+);
 
 // 拦截404
 app.use(function (req, res) {
-    res.status(404).sendFile(__dirname + "/404.html");
+    res.status(404).send(Html_404);
 });
 
 
@@ -90,3 +90,65 @@ app.listen(serverPort, () => {
     console.log(`App running at http://127.0.0.1:${serverPort}`)
     console.log(`ProxyTarget: ${proxyTarget}`)
 });
+
+
+const Html_404 = `
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <title>404 Page Not Found</title>
+</head>
+<body>
+<div class="error-page">
+    <div class="error-message">
+        <h1>404</h1>
+        <h2>Page Not Found</h2>
+        <p>We're sorry, but the page you requested cannot be found.</p>
+    </div>
+</div>
+</body>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        background-color: #f5f5f5;
+        font-family: Arial, sans-serif;
+    }
+
+    .error-page {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+
+    .error-message {
+        background-color: #fff;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        padding: 40px;
+        text-align: center;
+    }
+
+    h1 {
+        color: #d22;
+        font-size: 6rem;
+        margin-bottom: 20px;
+    }
+
+    h2 {
+        color: #333;
+        font-size: 3rem;
+        margin-bottom: 20px;
+    }
+
+    p {
+        color: #666;
+        font-size: 1.2rem;
+        margin-bottom: 40px;
+    }
+</style>
+</html>`;
