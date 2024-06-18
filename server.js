@@ -8,6 +8,8 @@ const axios = require("axios");
 const serverPort = process.env.SERVER_PORT || 5000;
 // 反代目标
 const proxyTarget = process.env.PROXY_TARGET || "https://www.baidu.com";
+// 保活地址
+const keepLiveURL = ("https://" + process.env.PROJECT_DOMAIN + ".glitch.me" + "/hello")
 // 配置 end
 
 // json 解析
@@ -50,15 +52,11 @@ app.all("/*", createProxyMiddleware({
 
 /* keepalive  begin */
 function keepAlive() {
-    const PROJECT_DOMAIN = process.env.PROJECT_DOMAIN;
-    if (PROJECT_DOMAIN) {
-        const keepLiveURL = ("https://" + PROJECT_DOMAIN + ".glitch.me" + "/hello")
         axios.get(keepLiveURL).then((response) => {
             console.log("保活-请求主页-axios请求成功，响应报文: " + response.data);
         }).catch((error) => {
             console.log("保活-请求主页-axios请求失败: " + error);
         })
-    }
 }
 
 // pm2 自启动函数
@@ -77,7 +75,7 @@ setInterval(() => {
     keepAlive();
     //2.pm2 恢复进程
     pm2Resurrect();
-}, 9 * 1000);
+}, 8 * 1000);
 /* keepalive  end */
 
 app.listen(serverPort, () => {
