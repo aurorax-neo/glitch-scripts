@@ -40,7 +40,7 @@ app.get("/info", (req, res) => {
 
 
 // 使用代理中间件
-app.all("", createProxyMiddleware({
+app.all("/", createProxyMiddleware({
         target: proxyTarget,
         changeOrigin: true,
         ws: true,
