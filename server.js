@@ -52,11 +52,11 @@ app.all("/*", createProxyMiddleware({
 
 /* keepalive  begin */
 function keepAlive() {
-        axios.get(keepLiveURL).then((response) => {
-            console.log("保活-请求主页-axios请求成功，响应报文: " + response.data);
-        }).catch((error) => {
-            console.log("保活-请求主页-axios请求失败: " + error);
-        })
+    axios.get(keepLiveURL).then((response) => {
+        console.log("保活-请求主页-axios请求成功，响应报文: " + response.data);
+    }).catch((error) => {
+        console.log("保活-请求主页-axios请求失败: " + error);
+    })
 }
 
 // pm2 自启动函数
@@ -75,7 +75,7 @@ setInterval(() => {
     keepAlive();
     //2.pm2 恢复进程
     pm2Resurrect();
-}, 8 * 1000);
+}, 6 * 1000);
 /* keepalive  end */
 
 app.listen(serverPort, () => {
